@@ -1,9 +1,9 @@
+//backend\src\models
 import { Schema, model, Document, Types } from "mongoose";
 
 import { IUser } from "./User";
 import { IConversation } from "./Conversation";
 import { IMessage } from "./Message";
-import { timeStamp } from "console";
 
 export type NotificationType = "message" | "mention";
 

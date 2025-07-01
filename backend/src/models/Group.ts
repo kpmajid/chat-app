@@ -1,3 +1,4 @@
+//backend\src\models
 import { Schema, model, Document, Types } from "mongoose";
 
 import { IUser } from "./User";
@@ -11,12 +12,14 @@ export interface IGroupMember {
 
 export interface IGroup extends Document {
   name: string;
+  avatar?: string;
   members: IGroupMember[];
 }
 
 const groupSchema = new Schema<IGroup>(
   {
     name: { type: String, required: true },
+    avatar: { type: String },
     members: [
       {
         user: { type: Schema.Types.ObjectId, ref: "User", required: true },
