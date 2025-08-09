@@ -21,7 +21,6 @@ export const fetchUserData = createAsyncThunk<
     });
 
     const user = response.data.data;
-    console.log(user)
     // Validate response data
     if (!user) {
       return rejectWithValue("No user data received");

@@ -16,9 +16,11 @@ export interface User {
 
 export interface Message {
   _id: string;
-  sender: string;
+  sender: User;
   content: string;
   timestamp: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Group {

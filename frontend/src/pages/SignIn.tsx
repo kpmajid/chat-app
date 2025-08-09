@@ -1,8 +1,6 @@
 //frontend\src\pages
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-// import { useDispatch } from "react-redux";
-// import { fetchUserData } from "@/features/auth/authThunks";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,7 +14,6 @@ import { AlertCircle, CheckCircle } from "lucide-react";
 import { fetchUserData } from "@/features/auth/authThunks";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { selectAuth } from "@/features/auth/authSlice";
-// import { AppDispatch } from "@/store";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -68,12 +65,12 @@ const SignIn = () => {
   const showLoading = isLoading || authLoading || !!success;
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-gray-50">
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 ">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Chat-App</h1>
-            <p className="text-gray-600 mt-2">Connect instantly with friends</p>
+            <h1 className="text-3xl font-bold ">Chat-App</h1>
+            <p className="mt-2">Connect instantly with friends</p>
           </div>
           {error && (
             <Alert variant="destructive">
