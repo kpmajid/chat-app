@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 import passport from "passport";
 import cookieParser from "cookie-parser";
 
+import { createServer } from "http";
+import { Server as SocketIOServer } from "socket.io";
+
 import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
@@ -13,11 +16,9 @@ import messageRoutes from "./routes/messageRoutes";
 import "./config/passport/googleStrategy";
 
 dotenv.config();
-
 connectDB();
 
 const app: Express = express();
-
 const port = process.env.PORT || 5000;
 
 app.use(
@@ -42,6 +43,16 @@ app.use("/api/user", userRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 
-app.listen(port, () => {
+const server = createServer(app);
+export const io = new SocketIOServer(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  },
+});
+
+import "./sockets";
+
+server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
