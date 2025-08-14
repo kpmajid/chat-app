@@ -2,34 +2,26 @@
 import { Socket, DefaultEventsMap } from "socket.io";
 
 import { io } from "../server";
+import { socketAuth } from "../middleware/socketAuth";
+import { handleConnection } from "./connectionHandler";
+
+io.use(socketAuth);
 
 io.on(
   "connection",
   (
     socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
   ) => {
-    const { userId, username } = socket.handshake.auth;
-    socket.data.user = { _id: userId, username };
-
-    console.log(
-      `User ${username} (${userId}) connected with socket ${socket.id}`
-    );
+    handleConnection(socket);
 
     socket.on("error", (error) => {
-      const userId = socket.data?.user?._id || "unknown";
-      console.error(`Socket error for user ${userId}:`, error);
+      console.error(`Socket error for user ${socket.data.user._id}:`, error);
     });
 
     socket.on("connect_error", (error) => {
-      const userId = socket.data?.user?._id || "unknown";
-      console.error(`Connection error for user ${userId}:`, error);
-    });
-
-    socket.on("disconnect", (reason) => {
-      const userId = socket.data?.user?._id || "unknown";
-      const username = socket.data?.user?.username || "unknown";
-      console.log(
-        `[socket] User ${username} (${userId}) disconnected — socketId=${socket.id}, reason: ${reason}`
+      console.error(
+        `Connection error for user ${socket.data.user._id}:`,
+        error
       );
     });
   }
