@@ -34,8 +34,8 @@ const chatSlice = createSlice({
     setConversations: (state, action: PayloadAction<Conversation[]>) => {
       state.conversations = action.payload;
     },
+
     addConversation: (state, action: PayloadAction<Conversation>) => {
-      // Prevent duplicates
       const exists = state.conversations.some(
         (conv) => conv._id === action.payload._id
       );
@@ -43,14 +43,19 @@ const chatSlice = createSlice({
         state.conversations.unshift(action.payload);
       }
     },
+
     updateConversation: (state, action: PayloadAction<Conversation>) => {
       const index = state.conversations.findIndex(
         (conv) => conv._id === action.payload._id
       );
       if (index !== -1) {
-        state.conversations[index] = action.payload;
+        state.conversations.splice(index, 1);
+        state.conversations.unshift(action.payload);
+      } else {
+        state.conversations.unshift(action.payload);
       }
     },
+
     removeConversation: (state, action: PayloadAction<string>) => {
       state.conversations = state.conversations.filter(
         (conv) => conv._id !== action.payload
@@ -65,6 +70,7 @@ const chatSlice = createSlice({
         state.messages = [];
       }
     },
+
     clearSelectedChat: (state) => {
       state.selectedChat = null;
       state.messages = [];
@@ -76,6 +82,9 @@ const chatSlice = createSlice({
     },
     addMessage: (state, action: PayloadAction<Message>) => {
       state.messages.push(action.payload);
+      if (state.messages.length > 100) {
+        state.messages.shift();
+      }
     },
     updateMessage: (state, action: PayloadAction<Message>) => {
       const index = state.messages.findIndex(
