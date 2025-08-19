@@ -1,26 +1,16 @@
 //frontend\src\pages
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSelector } from "react-redux";
-import { selectAuth } from "@/features/auth/authSlice";
-import {
-  selectSelectedChat,
-  selectMessages,
-  setSelectedChat,
-} from "@/features/chat/chatSlice";
+import { selectSelectedChat, setSelectedChat } from "@/features/chat/chatSlice";
 import { useAppDispatch } from "@/hooks/redux";
 
 import ChatLayout from "@/components/layout/ChatLayout";
-import ChatHeader from "@/components/chat/ChatHeader";
-import ChatMessages from "@/components/chat/ChatMessages";
-import ChatInput from "@/components/chat/ChatInput";
 import ChatPlaceholder from "@/components/chat/ChatPlaceholder";
+import ChatContent from "@/components/chat/ChatContent";
 
 const Home = () => {
-  const { user } = useSelector(selectAuth);
   const selectedChat = useSelector(selectSelectedChat);
-  const messages = useSelector(selectMessages);
   const dispatch = useAppDispatch();
-  const [message, setMessage] = useState("");
 
   // Handle Esc key to deselect chat
   useEffect(() => {
@@ -36,20 +26,7 @@ const Home = () => {
 
   return (
     <ChatLayout>
-      {selectedChat ? (
-        <>
-          <ChatHeader user={user!} selectedChat={selectedChat} />
-          <div className="flex flex-1 flex-col">
-            <ChatMessages messages={messages} user={user!} />
-            <ChatInput
-              message={message}
-              setMessage={setMessage}
-            />
-          </div>
-        </>
-      ) : (
-        <ChatPlaceholder />
-      )}
+      {selectedChat ? <ChatContent /> : <ChatPlaceholder />}
     </ChatLayout>
   );
 };

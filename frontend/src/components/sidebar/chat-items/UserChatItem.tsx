@@ -32,7 +32,6 @@ const UserChatItem = ({ conversation }: SidebarChatItemProps) => {
   const timestamp = conversation.lastMessage?.createdAt
     ? new Date(conversation.lastMessage.createdAt).toLocaleDateString()
     : new Date(conversation.createdAt).toLocaleDateString();
-  console.log(timestamp, "as");
 
   const handleChatSelect = () => {
     dispatch(setSelectedChat(conversation));

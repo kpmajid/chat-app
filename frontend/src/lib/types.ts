@@ -1,4 +1,4 @@
-//frontend\src\lib
+//frontend\src\lib\types.ts
 export type ConversationType = "user" | "group";
 
 export interface ChatGroup {
@@ -8,17 +8,22 @@ export interface ChatGroup {
 
 export interface User {
   _id: string;
+  googleId?: string;
   username: string;
   email: string;
-  avatar: string;
+  avatar?: string;
   online: boolean;
+  createdAt: string; // Add timestamps
+  updatedAt: string;
 }
 
 export interface Message {
   _id: string;
+  conversation: string;
   sender: User;
   content: string;
-  timestamp: number;
+  readBy?: string[];
+  editedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -26,11 +31,11 @@ export interface Message {
 export interface Group {
   _id: string;
   name: string;
+  avatar?: string;
   members: Array<{
-    user: string;
+    user: User | string;
     role: "admin" | "member";
   }>;
-  avatar?: string; // Add this field to your Group model if not present
   createdAt: string;
   updatedAt: string;
 }
@@ -49,7 +54,7 @@ export interface Conversation {
   type: "user" | "group";
   participants: User[];
   group?: Group;
-  lastMessage?: LastMessage;
+  lastMessage?: Message;
   updatedAt: string;
   createdAt: string;
 }
