@@ -12,7 +12,7 @@ const ChatContent = () => {
 
   const selectedChat = useSelector(selectSelectedChat);
   const messages = useSelector(selectMessages);
-  const { sendMessage, isConnected } = useRealTimeMessages();
+  const { sendMessage, deleteMessage, isConnected } = useRealTimeMessages();
 
   const handleSendMessage = useCallback(
     (message: string) => {
@@ -20,6 +20,14 @@ const ChatContent = () => {
       sendMessage(message, selectedChat._id);
     },
     [selectedChat, isConnected, sendMessage]
+  );
+
+  const handleDeleteMessage = useCallback(
+    (messageId: string) => {
+      if (!selectedChat || !isConnected) return;
+      return deleteMessage(messageId);
+    },
+    [deleteMessage, isConnected, selectedChat]
   );
 
   const isGroup = useMemo(
@@ -30,7 +38,12 @@ const ChatContent = () => {
   return (
     <div className="flex flex-col h-full">
       <ChatHeader user={user!} selectedChat={selectedChat!} />
-      <ChatMessages messages={messages} user={user!} isGroup={isGroup} />
+      <ChatMessages
+        messages={messages}
+        user={user!}
+        isGroup={isGroup}
+        onDeleteMessage={handleDeleteMessage}
+      />
       <ChatInput onSendMessage={handleSendMessage} disabled={!isConnected} />
     </div>
   );

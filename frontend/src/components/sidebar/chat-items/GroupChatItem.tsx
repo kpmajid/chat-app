@@ -8,6 +8,7 @@ import { useSelector } from "react-redux";
 import { selectAuth } from "@/features/auth/authSlice";
 import { useAppDispatch } from "@/hooks/redux";
 import { fetchMessages } from "@/features/chat/chatThunks";
+import { AlertCircle } from "lucide-react";
 
 interface SidebarChatItemProps {
   conversation: Conversation;
@@ -24,13 +25,31 @@ const GroupChatItem = ({ conversation }: SidebarChatItemProps) => {
   const avatar = conversation.group.avatar || "";
   const lastMessage = conversation.lastMessage;
 
-  let lastMessageContent = `You created group ${conversationName}`;
-  if (lastMessage && conversation.lastMessage?.content) {
-    const senderName =
+  let senderName;
+  let messageContent = `You created group ${conversationName}`;
+  let isDeletedMessage = false;
+
+  if (lastMessage) {
+    const isDeleted =
+      lastMessage.isDeleted ||
+      !lastMessage.content ||
+      lastMessage.content.trim() === "";
+
+    senderName =
       lastMessage.sender._id === user?._id
         ? "You"
         : lastMessage.sender.username;
-    lastMessageContent = `${senderName}: ${lastMessage.content}`;
+
+    if (isDeleted) {
+      isDeletedMessage = true;
+
+      messageContent =
+        lastMessage.sender._id === user?._id
+          ? "You deleted this message"
+          : "This message was deleted";
+    } else if (lastMessage.content) {
+      messageContent = lastMessage.content;
+    }
   }
 
   const timestamp = conversation.lastMessage?.createdAt
@@ -65,15 +84,37 @@ const GroupChatItem = ({ conversation }: SidebarChatItemProps) => {
               {conversationName[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">{conversationName}</span>
-            <span className="truncate text-xs text-muted-foreground">
-              {lastMessageContent}
-            </span>
+
+          <div className="grid flex-1 text-left text-sm leading-tight ">
+            {/* <span className="truncate font-semibold">{conversationName}</span> */}
+
+            <div className="flex">
+              <span className="truncate font-semibold">{conversationName}</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {timestamp}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1 overflow-hidden">
+              {senderName && (
+                <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                  {senderName} :
+                </span>
+              )}
+              {isDeletedMessage ? (
+                <>
+                  <AlertCircle className="size-3 flex-shrink-0 text-muted-foreground" />
+                  <span className="truncate text-xs text-muted-foreground italic">
+                    {messageContent}
+                  </span>
+                </>
+              ) : (
+                <span className="truncate text-xs text-muted-foreground min-w-0">
+                  {messageContent}
+                </span>
+              )}
+            </div>
           </div>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {timestamp}
-          </span>
         </div>
       </SidebarMenuButton>
     </SidebarMenuItem>

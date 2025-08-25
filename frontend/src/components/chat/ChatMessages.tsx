@@ -1,40 +1,42 @@
 //frontend\src\components\chat
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Message, User } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ChatMessage from "./ChatMessage";
 
-const ChatMessages = ({
-  messages,
-  user,
-  isGroup,
-}: {
+import { formatDateDivider } from "@/lib/formatDateDivider";
+import { Badge } from "../ui/badge";
+
+interface ChatMessagesProps {
   messages: Message[];
   user: User;
   isGroup: boolean;
   typingUsers?: User[];
-}) => {
+  onDeleteMessage?: (id: string) => Promise<void> | void;
+}
+
+const ChatMessages = ({
+  messages,
+  user,
+  isGroup,
+  onDeleteMessage,
+}: ChatMessagesProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const hasMessages = messages?.length > 0;
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const nearBottomThreshold = 96;
 
-  // Keep a threshold so light scrolling doesn't block autoscroll
-  const nearBottomThreshold = 96; // px
-
-  // Auto-scroll to bottom when new messages arrive if user is near bottom
   useEffect(() => {
     if (isNearBottom) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [messages?.length, isNearBottom]);
 
-  // Track scroll position to detect whether user is near the bottom
   useEffect(() => {
-    // We need to get the actual scrollable viewport from ScrollArea
     const scrollViewport = containerRef.current?.parentElement;
     if (!scrollViewport) return;
 
@@ -46,14 +48,12 @@ const ChatMessages = ({
       setIsNearBottom(distanceFromBottom <= nearBottomThreshold);
     };
 
-    // Initialize position on mount
     handleScroll();
 
     scrollViewport.addEventListener("scroll", handleScroll, { passive: true });
     return () => scrollViewport.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // For screen readers: concatenate latest content
   const liveRegionText = useMemo(() => {
     if (!hasMessages) return "No messages yet";
     const last = messages[messages.length - 1];
@@ -88,15 +88,34 @@ const ChatMessages = ({
           <div ref={topSentinelRef} aria-hidden="true" />
 
           {/* Messages list */}
-          <div className="space-y-4">
-            {messages.map((msg) => (
-              <ChatMessage
-                key={msg._id}
-                user={user}
-                message={msg}
-                isGroup={isGroup}
-              />
-            ))}
+          <div className="space-y-2">
+            {messages.map((msg, index) => {
+              const currentDate = new Date(msg.createdAt!).toDateString();
+              const previousDate =
+                index > 0
+                  ? new Date(messages[index - 1].createdAt!).toDateString()
+                  : null;
+
+              const showDateDivider = currentDate !== previousDate;
+
+              return (
+                <Fragment key={msg._id}>
+                  {showDateDivider && (
+                    <div className="flex items-center justify-center py-4 px-4">
+                      <Badge variant="outline">
+                        {formatDateDivider(new Date(msg.createdAt!))}
+                      </Badge>
+                    </div>
+                  )}
+                  <ChatMessage
+                    user={user}
+                    message={msg}
+                    isGroup={isGroup}
+                    onDeleteMessage={onDeleteMessage}
+                  />
+                </Fragment>
+              );
+            })}
           </div>
 
           <div ref={bottomRef} aria-hidden="true" />

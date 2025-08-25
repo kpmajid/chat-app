@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
 
   useEffect(() => {
     // Only connect when user is authenticated
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user?._id ) {
       const newSocket = io(
         import.meta.env.VITE_API_URL || "http://localhost:5000",
         {
@@ -50,14 +50,14 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
         setSocket(null);
         setIsConnected(false);
       };
-    } else {
+    } else if(!isAuthenticated||!user?._id) {
       if (socket) {
         socket.close();
         setSocket(null);
         setIsConnected(false);
       }
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated,socket, user?._id, user?.username]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

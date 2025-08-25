@@ -3,8 +3,10 @@ import { useSocket } from "./useSocket";
 import { useAppDispatch, useAppSelector } from "./redux";
 import {
   addMessage,
+  selectConversations,
   selectSelectedChat,
   updateConversation,
+  updateMessage,
 } from "@/features/chat/chatSlice";
 import type { Message, Conversation } from "@/lib/types";
 
@@ -12,10 +14,14 @@ export const useRealTimeMessages = () => {
   const { socket, isConnected } = useSocket();
   const dispatch = useAppDispatch();
   const selectedChat = useAppSelector(selectSelectedChat);
+  const conversations = useAppSelector(selectConversations);
 
   // Use ref to get current selectedChat without causing effect re-runs
   const selectedChatRef = useRef(selectedChat);
+  const conversationsRef = useRef(conversations);
+
   selectedChatRef.current = selectedChat;
+  conversationsRef.current = conversations;
 
   // Memoize the message handler to prevent effect re-runs
   const handleNewMessage = useCallback(
@@ -36,17 +42,60 @@ export const useRealTimeMessages = () => {
     [dispatch]
   );
 
+  const handleMessageDeleted = useCallback(
+    (data: { messageId: string; conversationId: string; deletedAt: Date }) => {
+      const { messageId, conversationId, deletedAt } = data;
+
+      if (
+        selectedChatRef.current &&
+        selectedChatRef.current._id === conversationId
+      ) {
+        dispatch(
+          updateMessage({
+            _id: messageId,
+            isDeleted: true,
+            deletedAt: deletedAt.toString(),
+          })
+        );
+      }
+
+      const affectedConversations = conversationsRef.current.filter(
+        (conv) => conv.lastMessage && conv.lastMessage._id === messageId
+      );
+
+      // Update conversations where this was the last message
+      affectedConversations.forEach((conv) => {
+        dispatch(
+          updateConversation({
+            ...conv,
+            lastMessage: {
+              ...conv.lastMessage!,
+              content: "",
+              isDeleted: true,
+              deletedAt: deletedAt.toString(),
+            },
+          })
+        );
+      });
+
+      console.log("Message deleted by participant:", messageId);
+    },
+    [dispatch]
+  );
+
   // Listen for incoming messages
   useEffect(() => {
     if (!socket || !isConnected) return;
 
     // Set up event listeners
     socket.on("newMessage", handleNewMessage);
+    socket.on("messageDeleted", handleMessageDeleted);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
+      socket.off("messageDeleted", handleMessageDeleted);
     };
-  }, [socket, isConnected, handleNewMessage]);
+  }, [socket, isConnected, handleNewMessage, handleMessageDeleted]);
 
   // Send message function
   const sendMessage = useCallback(
@@ -95,8 +144,81 @@ export const useRealTimeMessages = () => {
     [socket, isConnected, dispatch]
   );
 
+  const deleteMessage = useCallback(
+    (messageId: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        console.log("deleteMessage called");
+        if (!socket || !isConnected) {
+          console.error("Socket not connected");
+          return reject(new Error("Socket not connected"));
+        }
+
+        if (!messageId?.trim()) {
+          console.error("Message ID is required");
+          return reject(new Error("Message ID is required"));
+        }
+
+        const conversationId = selectedChatRef.current?._id;
+
+        if (!conversationId?.trim()) {
+          console.error("No conversation selected");
+          return reject(new Error("No conversation selected"));
+        }
+
+        const messageData = {
+          messageId,
+          conversationId,
+        };
+
+        socket.emit("deleteMessage", messageData, (response: any) => {
+          if (response.status === "success") {
+            if (
+              selectedChatRef.current &&
+              selectedChatRef.current._id === conversationId
+            ) {
+              dispatch(
+                updateMessage({
+                  _id: messageId,
+                  isDeleted: true,
+                  deletedAt: new Date().toISOString(),
+                })
+              );
+            }
+
+            // Check if deleted message was the last message in any conversation
+            const affectedConversations = conversationsRef.current.filter(
+              (conv) => conv.lastMessage && conv.lastMessage._id === messageId
+            );
+
+            // Update conversations where this was the last message
+            affectedConversations.forEach((conv) => {
+              dispatch(
+                updateConversation({
+                  ...conv,
+                  lastMessage: {
+                    ...conv.lastMessage!,
+                    content: "",
+                    isDeleted: true,
+                  },
+                })
+              );
+            });
+
+            console.log("Message deleted successfully:", messageId);
+            resolve(response);
+          } else {
+            console.error("Failed to delete message:", response.message);
+            reject(new Error(response.message));
+          }
+        });
+      });
+    },
+    [socket, isConnected, dispatch]
+  );
+
   return {
     sendMessage,
+    deleteMessage,
     isConnected,
   };
 };

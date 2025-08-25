@@ -88,4 +88,79 @@ export const handleMessage = (socket: Socket) => {
       }
     }
   });
+
+  socket.on("deleteMessage", async (data, callback) => {
+    try {
+      console.log("deleteMessage?", data);
+      const { conversationId, messageId } = data;
+      const userId = socket.data.user._id;
+
+      if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
+        throw new Error("Valid message ID is required");
+      }
+
+      if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
+        throw new Error("Valid conversation ID is required");
+      }
+
+      const message = await Message.findOne({
+        _id: messageId,
+        conversation: conversationId,
+        sender: userId,
+      });
+
+      if (!message) {
+        throw new Error("Message not found or access denied");
+      }
+
+      if (message.isDeleted) {
+        throw new Error("Message already deleted");
+      }
+
+      const conversation = await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+      });
+
+      if (!conversation) {
+        throw new Error("Chat not found or access denied");
+      }
+
+      await Message.findByIdAndUpdate(messageId, {
+        isDeleted: true,
+        deletedAt: new Date(),
+      });
+
+      const participantIds = conversation.participants
+        .filter((p) => p._id.toString() !== userId.toString())
+        .map((p: any) => p._id.toString());
+
+      console.log("participantIds:", participantIds);
+
+      participantIds.forEach((participantId) => {
+        io.to(`user_${participantId}`).emit("messageDeleted", {
+          messageId,
+          conversationId,
+          deletedAt: new Date(),
+        });
+      });
+
+      if (callback) {
+        callback({
+          status: "success",
+          message: "Message deleted successfully",
+        });
+      }
+
+      console.log(`Message ${messageId} deleted by user ${userId}`);
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      if (callback) {
+        callback({
+          status: "error",
+          message: (error as Error).message,
+        });
+      }
+    }
+  });
 };

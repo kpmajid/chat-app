@@ -26,6 +26,8 @@ export interface Message {
   editedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  isDeleted: boolean;
+  deletedAt?: string;
 }
 
 export interface Group {

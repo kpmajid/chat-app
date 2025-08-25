@@ -8,6 +8,7 @@ import { selectSelectedChat, setSelectedChat } from "@/features/chat/chatSlice";
 import { selectAuth } from "@/features/auth/authSlice";
 import { useAppDispatch } from "@/hooks/redux";
 import { fetchMessages } from "@/features/chat/chatThunks";
+import { AlertCircle } from "lucide-react";
 
 interface SidebarChatItemProps {
   conversation: Conversation;
@@ -27,7 +28,27 @@ const UserChatItem = ({ conversation }: SidebarChatItemProps) => {
 
   const conversationName = otherParticipant.username;
   const avatar = otherParticipant.avatar || "";
-  const lastMessageContent = conversation.lastMessage?.content || "";
+  const lastMessage = conversation.lastMessage;
+
+  let lastMessageContent = "No messages yet";
+  let isDeletedMessage = false;
+
+  if (lastMessage) {
+    const isDeleted =
+      lastMessage.isDeleted ||
+      !lastMessage.content ||
+      lastMessage.content.trim() === "";
+
+    if (isDeleted) {
+      isDeletedMessage = true;
+      lastMessageContent =
+        lastMessage.sender._id === user?._id
+          ? "You deleted this message"
+          : "This message was deleted";
+    } else if (lastMessage.content) {
+      lastMessageContent = lastMessage.content;
+    }
+  }
 
   const timestamp = conversation.lastMessage?.createdAt
     ? new Date(conversation.lastMessage.createdAt).toLocaleDateString()
@@ -67,14 +88,27 @@ const UserChatItem = ({ conversation }: SidebarChatItemProps) => {
             )}
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">{conversationName}</span>
-            <span className="truncate text-xs text-muted-foreground">
-              {lastMessageContent}
-            </span>
+            <div className="flex">
+              <span className="truncate font-semibold">{conversationName}</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {timestamp}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 overflow-hidden">
+              {isDeletedMessage ? (
+                <>
+                  <AlertCircle className="size-3 flex-shrink-0 text-muted-foreground" />
+                  <span className="truncate text-xs text-muted-foreground italic">
+                    {lastMessageContent}
+                  </span>
+                </>
+              ) : (
+                <span className="truncate text-xs text-muted-foreground min-w-0">
+                  {lastMessageContent}
+                </span>
+              )}
+            </div>
           </div>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {timestamp || ""}
-          </span>
         </div>
       </SidebarMenuButton>
     </SidebarMenuItem>

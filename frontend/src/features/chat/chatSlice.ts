@@ -80,19 +80,30 @@ const chatSlice = createSlice({
     setMessages: (state, action: PayloadAction<Message[]>) => {
       state.messages = action.payload;
     },
+
     addMessage: (state, action: PayloadAction<Message>) => {
       state.messages.push(action.payload);
       if (state.messages.length > 100) {
         state.messages.shift();
       }
     },
-    updateMessage: (state, action: PayloadAction<Message>) => {
+
+    updateMessage: (
+      state,
+      action: PayloadAction<Partial<Message> & { _id: string }>
+    ) => {
       const index = state.messages.findIndex(
         (msg) => msg._id === action.payload._id
       );
       if (index !== -1) {
-        state.messages[index] = action.payload;
+        state.messages[index] = { ...state.messages[index], ...action.payload };
       }
+    },
+
+    removeMessage: (state, action: PayloadAction<string>) => {
+      state.messages = state.messages.filter(
+        (msg) => msg._id !== action.payload
+      );
     },
 
     // Error

@@ -18,15 +18,7 @@ const getConversationPipeline = (matchStage: any): mongoose.PipelineStage[] => [
       localField: "participants",
       foreignField: "_id",
       as: "participants",
-      pipeline: [
-        {
-          $project: {
-            username: 1,
-            avatar: 1,
-            online: 1,
-          },
-        },
-      ],
+      pipeline: [{ $project: { username: 1, avatar: 1, online: 1 } }],
     },
   },
   {
@@ -35,64 +27,43 @@ const getConversationPipeline = (matchStage: any): mongoose.PipelineStage[] => [
       localField: "group",
       foreignField: "_id",
       as: "group",
-      pipeline: [
-        {
-          $project: {
-            name: 1,
-            avatar: 1,
-          },
-        },
-      ],
+      pipeline: [{ $project: { name: 1, avatar: 1 } }],
     },
   },
-  {
-    $unwind: {
-      path: "$group",
-      preserveNullAndEmptyArrays: true,
-    },
-  },
+  { $unwind: { path: "$group", preserveNullAndEmptyArrays: true } },
   {
     $lookup: {
       from: "messages",
       localField: "lastMessage",
       foreignField: "_id",
       as: "lastMessage",
-    },
-  },
-  {
-    $unwind: {
-      path: "$lastMessage",
-      preserveNullAndEmptyArrays: true,
-    },
-  },
-  {
-    $lookup: {
-      from: "users",
-      localField: "lastMessage.sender",
-      foreignField: "_id",
-      as: "lastMessage.sender",
       pipeline: [
         {
-          $project: {
-            username: 1,
-            email: 1,
-            avatar: 1,
-            online: 1,
+          $lookup: {
+            from: "users",
+            localField: "sender",
+            foreignField: "_id",
+            as: "sender",
+            pipeline: [{ $project: { username: 1, avatar: 1 } }],
+          },
+        },
+        { $unwind: "$sender" },
+        {
+          $set: {
+            content: {
+              $cond: {
+                if: "$isDeleted",
+                then: "",
+                else: "$content",
+              },
+            },
           },
         },
       ],
     },
   },
-  {
-    $addFields: {
-      "lastMessage.sender": { $first: "$lastMessage.sender" },
-    },
-  },
-  {
-    $sort: {
-      updatedAt: -1,
-    },
-  },
+  { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } },
+  { $sort: { updatedAt: -1 } },
 ];
 
 /**

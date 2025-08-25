@@ -70,14 +70,53 @@ export const getMessages = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // Fetch messages with pagination
-    const messages = await Message.find({
-      conversation: conversationId,
-    })
-      .populate("sender", "username avatar online")
-      .sort({ createdAt: -1 })
-      .limit(limitNum)
-      .skip(offsetNum);
+    const messages = await Message.aggregate([
+      {
+        $match: {
+          conversation: new mongoose.Types.ObjectId(conversationId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "sender",
+          foreignField: "_id",
+          as: "sender",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                avatar: 1,
+                online: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unwind: "$sender",
+      },
+      {
+        $set: {
+          content: {
+            $cond: {
+              if: "$isDeleted",
+              then: "",
+              else: "$content",
+            },
+          },
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $skip: offsetNum,
+      },
+      {
+        $limit: limitNum,
+      },
+    ]);
 
     // Get total count for pagination metadata
     const totalMessages = await Message.countDocuments({
