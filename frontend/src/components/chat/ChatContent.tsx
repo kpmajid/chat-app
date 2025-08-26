@@ -12,7 +12,8 @@ const ChatContent = () => {
 
   const selectedChat = useSelector(selectSelectedChat);
   const messages = useSelector(selectMessages);
-  const { sendMessage, deleteMessage, isConnected } = useRealTimeMessages();
+  const { sendMessage, deleteMessage, editMessage, isConnected } =
+    useRealTimeMessages();
 
   const handleSendMessage = useCallback(
     (message: string) => {
@@ -30,6 +31,16 @@ const ChatContent = () => {
     [deleteMessage, isConnected, selectedChat]
   );
 
+  const handleUpdateMessage = useCallback(
+    (messageId: string, content: string) => {
+      if (!selectedChat || !isConnected) return;
+      console.log("messageId: ", messageId);
+      console.log("content: ", content);
+      return editMessage(messageId, content);
+    },
+    [editMessage, isConnected, selectedChat]
+  );
+
   const isGroup = useMemo(
     () => selectedChat?.type === "group",
     [selectedChat?.type]
@@ -43,6 +54,7 @@ const ChatContent = () => {
         user={user!}
         isGroup={isGroup}
         onDeleteMessage={handleDeleteMessage}
+        onEditMessage={handleUpdateMessage}
       />
       <ChatInput onSendMessage={handleSendMessage} disabled={!isConnected} />
     </div>

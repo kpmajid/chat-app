@@ -14,6 +14,7 @@ interface ChatMessagesProps {
   isGroup: boolean;
   typingUsers?: User[];
   onDeleteMessage?: (id: string) => Promise<void> | void;
+  onEditMessage?: (id: string, newContent: string) => Promise<void> | void;
 }
 
 const ChatMessages = ({
@@ -21,6 +22,7 @@ const ChatMessages = ({
   user,
   isGroup,
   onDeleteMessage,
+  onEditMessage,
 }: ChatMessagesProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -112,6 +114,7 @@ const ChatMessages = ({
                     message={msg}
                     isGroup={isGroup}
                     onDeleteMessage={onDeleteMessage}
+                    onEditMessage={onEditMessage}
                   />
                 </Fragment>
               );

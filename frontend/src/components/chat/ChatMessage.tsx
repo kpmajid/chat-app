@@ -10,6 +10,7 @@ interface ChatMessageProps {
   user: User;
   isGroup?: boolean;
   onDeleteMessage?: (id: string) => Promise<void> | void;
+  onEditMessage?: (id: string, newContent: string) => Promise<void> | void;
 }
 
 const ChatMessage = ({
@@ -17,6 +18,7 @@ const ChatMessage = ({
   user,
   isGroup = false,
   onDeleteMessage,
+  onEditMessage
 }: ChatMessageProps) => {
   const isOutgoing = message.sender._id === user?._id;
   const isDeleted =
@@ -59,6 +61,7 @@ const ChatMessage = ({
         isOutgoing={isOutgoing}
         isGroup={isGroup}
         onDeleteMessage={onDeleteMessage}
+        onEditMessage={onEditMessage}
       />
 
       {isOutgoing && <div className="size-8 flex-shrink-0" />}

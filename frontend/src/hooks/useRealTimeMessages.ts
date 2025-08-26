@@ -83,6 +83,48 @@ export const useRealTimeMessages = () => {
     [dispatch]
   );
 
+  const handleMessageUpdated = useCallback(
+    (data: {
+      messageId: string;
+      conversationId: string;
+      content: string;
+      editedAt : Date;
+    }) => {
+      const { messageId, conversationId, content, editedAt   } = data;
+
+      if (
+        selectedChatRef.current &&
+        selectedChatRef.current._id === conversationId
+      ) {
+        dispatch(
+          updateMessage({
+            _id: messageId,
+            content: content,
+            editedAt : editedAt .toString(),
+          })
+        );
+
+        const affectedConversations = conversationsRef.current.filter(
+          (conv) => conv.lastMessage && conv.lastMessage._id === messageId
+        );
+
+        affectedConversations.forEach((conv) => {
+          dispatch(
+            updateConversation({
+              ...conv,
+              lastMessage: {
+                ...conv.lastMessage!,
+                content: content,
+                editedAt : editedAt .toString(),
+              },
+            })
+          );
+        });
+      }
+    },
+    [dispatch]
+  );
+
   // Listen for incoming messages
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -90,12 +132,20 @@ export const useRealTimeMessages = () => {
     // Set up event listeners
     socket.on("newMessage", handleNewMessage);
     socket.on("messageDeleted", handleMessageDeleted);
+    socket.on("messageUpdated", handleMessageUpdated);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.off("messageDeleted", handleMessageDeleted);
+      socket.off("messageUpdated", handleMessageUpdated);
     };
-  }, [socket, isConnected, handleNewMessage, handleMessageDeleted]);
+  }, [
+    socket,
+    isConnected,
+    handleNewMessage,
+    handleMessageDeleted,
+    handleMessageUpdated,
+  ]);
 
   // Send message function
   const sendMessage = useCallback(
@@ -216,9 +266,83 @@ export const useRealTimeMessages = () => {
     [socket, isConnected, dispatch]
   );
 
+  const editMessage = useCallback(
+    (messageId: string, content: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        if (!socket || !isConnected) {
+          console.error("Socket not connected");
+          return reject(new Error("Socket not connected"));
+        }
+
+        if (!content.trim()) {
+          console.error("Content is required");
+          return reject(new Error("Content is required"));
+        }
+
+        if (!messageId?.trim()) {
+          console.error("Message ID is required");
+          return reject(new Error("Message ID is required"));
+        }
+
+        const conversationId = selectedChatRef.current?._id;
+        if (!conversationId?.trim()) {
+          console.error("No conversation selected");
+          return reject(new Error("No conversation selected"));
+        }
+
+        const messageData = {
+          content,
+          messageId,
+          conversationId,
+        };
+
+        socket.emit("updateMessage", messageData, (response: any) => {
+          if (response.status === "success") {
+            if (
+              selectedChatRef.current &&
+              selectedChatRef.current._id === conversationId
+            ) {
+              dispatch(
+                updateMessage({
+                  _id: messageId,
+                  content: content,
+                  editedAt : new Date().toISOString(),
+                })
+              );
+            }
+
+            const affectedConversations = conversationsRef.current.filter(
+              (conv) => conv.lastMessage && conv.lastMessage._id === messageId
+            );
+
+            affectedConversations.forEach((conv) => {
+              dispatch(
+                updateConversation({
+                  ...conv,
+                  lastMessage: {
+                    ...conv.lastMessage!,
+                    content: content,
+                  },
+                })
+              );
+            });
+
+            console.log("Message updated successfully:", messageId);
+            resolve(response);
+          } else {
+            console.error("Failed to update message:", response.message);
+            reject(new Error(response.message));
+          }
+        });
+      });
+    },
+    [socket, isConnected, dispatch]
+  );
+
   return {
     sendMessage,
     deleteMessage,
+    editMessage,
     isConnected,
   };
 };

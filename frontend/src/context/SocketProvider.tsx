@@ -50,14 +50,14 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
         setSocket(null);
         setIsConnected(false);
       };
-    } else if(!isAuthenticated||!user?._id) {
+    } else if (!isAuthenticated || !user?._id) {
       if (socket) {
         socket.close();
         setSocket(null);
         setIsConnected(false);
       }
     }
-  }, [isAuthenticated,socket, user?._id, user?.username]);
+  }, [isAuthenticated, user?._id, user?.username]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

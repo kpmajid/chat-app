@@ -7,21 +7,26 @@ import {
 } from "../../ui/dropdown-menu";
 import type { Message } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Copy, MoreVertical, Trash2 } from "lucide-react";
+import { Copy, Edit, MoreVertical, Trash2 } from "lucide-react";
 import DeleteMessageDialog from "./DeleteMessageDialog";
 
 interface MessageActionsProps {
   message: Message;
-  canDelete: boolean;
+  isOutgoing: boolean;
   onDeleteMessage?: (id: string) => Promise<void> | void;
+  onEditMessage?: () => void;
 }
 
 const MessageActions = ({
   message,
-  canDelete,
+  isOutgoing,
   onDeleteMessage,
+  onEditMessage,
 }: MessageActionsProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const canDelete = isOutgoing;
+  const canEdit = isOutgoing;
 
   const handleCopy = async () => {
     try {
@@ -63,6 +68,12 @@ const MessageActions = ({
               <Copy className="size-3" />
               Copy message
             </DropdownMenuItem>
+            {canEdit && (
+              <DropdownMenuItem onClick={onEditMessage} className="gap-2">
+                <Edit className="size-3" />
+                Edit message
+              </DropdownMenuItem>
+            )}
             {canDelete && (
               <DropdownMenuItem
                 onClick={handleDeleteClick}
@@ -76,11 +87,13 @@ const MessageActions = ({
         </DropdownMenu>
       </div>
 
-      <DeleteMessageDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirm={handleDeleteConfirm}
-      />
+      {canDelete && (
+        <DeleteMessageDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
     </>
   );
 };
