@@ -73,7 +73,7 @@ const ChatInput = ({ onSendMessage, disabled = false }: ChatInputProps) => {
       <form
         ref={formRef}
         onSubmit={handleSubmit}
-        className="flex items-end gap-3 p-4"
+        className="flex items-end gap-3 p-2"
         aria-label="Chat input"
       >
         <label htmlFor="chat-message" className="sr-only">

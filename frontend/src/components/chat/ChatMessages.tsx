@@ -78,7 +78,7 @@ const ChatMessages = ({
     <div className="flex-1 overflow-hidden">
       <ScrollArea className="h-full">
         <div
-          className="px-4 py-4 space-y-4"
+          className="px-4 py-4"
           ref={containerRef}
           role="log"
           aria-live="polite"

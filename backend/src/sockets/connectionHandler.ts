@@ -1,9 +1,9 @@
 //backend\src\sockets\connectionHandler.ts
 import { Socket } from "socket.io";
 import { User } from "../models/User";
-import { io } from "../server";
+import { notifyContactsAboutStatusChange } from "./socketUtils";
 
-export const  handleConnection = async (socket: Socket) => {
+export const handleConnection = async (socket: Socket) => {
   const userId = socket.data.user._id.toString();
   const username = socket.data.user.username;
 
@@ -12,10 +12,9 @@ export const  handleConnection = async (socket: Socket) => {
   // Join user-specific room for direct messaging
   socket.join(`user_${userId.toString()}`);
 
-  // Update online status
   await User.findByIdAndUpdate(userId, { online: true });
 
-  io.emit("userOnline", { userId, username });
+  await notifyContactsAboutStatusChange(userId, username, true);
 
   // Handle disconnection
   socket.on("disconnect", async () => {
@@ -24,7 +23,7 @@ export const  handleConnection = async (socket: Socket) => {
     try {
       await User.findByIdAndUpdate(userId, { online: false });
 
-      io.emit("userOffline", { userId, username });
+      await notifyContactsAboutStatusChange(userId, username, false);
     } catch (error) {
       console.error("Error updating offline status:", error);
     }

@@ -2,6 +2,7 @@
 import type { Conversation } from "@/lib/types";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import OnlineIndicator from "@/components/OnlineIndicator";
 import { cn } from "@/lib/utils";
 import { useSelector } from "react-redux";
 import { selectSelectedChat, setSelectedChat } from "@/features/chat/chatSlice";
@@ -83,9 +84,7 @@ const UserChatItem = ({ conversation }: SidebarChatItemProps) => {
                 {conversationName[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {otherParticipant.online && (
-              <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-background"></div>
-            )}
+            <OnlineIndicator isOnline={otherParticipant.online} />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <div className="flex">

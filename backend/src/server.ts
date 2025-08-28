@@ -49,6 +49,18 @@ export const io = new SocketIOServer(server, {
     origin: process.env.FRONTEND_URL,
     credentials: true,
   },
+  pingTimeout: 60000, 
+  pingInterval: 25000, 
+  upgradeTimeout: 30000,
+  allowEIO3: true, 
+  transports: ["websocket", "polling"],
+  allowUpgrades: true,
+  perMessageDeflate: false,
+  httpCompression: true,
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000, 
+    skipMiddlewares: true,
+  },
 });
 
 import "./sockets";

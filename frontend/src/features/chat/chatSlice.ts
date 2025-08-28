@@ -129,6 +129,37 @@ const chatSlice = createSlice({
       }
       // If not found, the component will handle creation
     },
+
+    //update the user online status?
+    updateUserOnlineStatus: (
+      state,
+      action: PayloadAction<{
+        userId: string;
+        online: boolean;
+      }>
+    ) => {
+      const { userId, online } = action.payload;
+
+      // Update in conversations
+      state.conversations = state.conversations.map((conversation) => ({
+        ...conversation,
+        participants: conversation.participants.map((participant) =>
+          participant._id === userId ? { ...participant, online } : participant
+        ),
+      }));
+
+      // Update in selected chat if it matches
+      if (state.selectedChat) {
+        state.selectedChat = {
+          ...state.selectedChat,
+          participants: state.selectedChat.participants.map((participant) =>
+            participant._id === userId
+              ? { ...participant, online }
+              : participant
+          ),
+        };
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -219,6 +250,7 @@ export const {
   updateMessage,
   setError,
   findOrCreateConversation,
+  updateUserOnlineStatus,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
