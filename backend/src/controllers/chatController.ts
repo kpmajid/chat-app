@@ -5,12 +5,16 @@ import { IUser, User } from "../models/User";
 import { Conversation } from "../models/Conversation";
 import { Group, IGroupMember } from "../models/Group";
 import { Types } from "mongoose";
+import { io } from "../server";
 
 /**
  * Optimized aggregation pipeline for populating conversation data
  * Reduces data exposure and improves performance
  */
-const getConversationPipeline = (matchStage: any): mongoose.PipelineStage[] => [
+const getConversationPipeline = (
+  matchStage: any,
+  currentUserId?: string
+): mongoose.PipelineStage[] => [
   { $match: matchStage },
   {
     $lookup: {
@@ -63,6 +67,20 @@ const getConversationPipeline = (matchStage: any): mongoose.PipelineStage[] => [
     },
   },
   { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } },
+  ...(currentUserId
+    ? [
+        {
+          $addFields: {
+            unreadCount: {
+              $ifNull: [
+                { $getField: { field: currentUserId, input: "$unreadCount" } },
+                0,
+              ],
+            },
+          },
+        },
+      ]
+    : []),
   { $sort: { updatedAt: -1 } },
 ];
 
@@ -86,9 +104,12 @@ export const getAllChats = async (
     }
 
     const chats = await Conversation.aggregate(
-      getConversationPipeline({
-        participants: { $in: [new mongoose.Types.ObjectId(user._id)] },
-      })
+      getConversationPipeline(
+        {
+          participants: { $in: [new mongoose.Types.ObjectId(user._id)] },
+        },
+        user._id.toString()
+      )
     );
 
     res.status(200).json({
@@ -199,10 +220,15 @@ export const createUserConversation = async (
 
     // Check if conversation already exists
     const existingChat = await Conversation.aggregate(
-      getConversationPipeline({
-        type: "user",
-        participants: { $all: [user._id, new mongoose.Types.ObjectId(userId)] },
-      })
+      getConversationPipeline(
+        {
+          type: "user",
+          participants: {
+            $all: [user._id, new mongoose.Types.ObjectId(userId)],
+          },
+        },
+        user._id.toString()
+      )
     );
 
     if (existingChat.length > 0) {
@@ -222,14 +248,29 @@ export const createUserConversation = async (
 
     // Fetch the created conversation with populated data
     const createdChat = await Conversation.aggregate(
-      getConversationPipeline({
-        _id: newConversation._id,
-      })
+      getConversationPipeline(
+        {
+          _id: newConversation._id,
+        },
+        user._id.toString()
+      )
     );
+
+    const conversationData = createdChat[0];
+
+    // 🚀 NEW: Emit socket event to notify the other participant
+    io.to(`user_${userId}`).emit("newConversation", {
+      conversation: conversationData,
+      initiatedBy: {
+        _id: user._id,
+        username: user.username,
+        avatar: user.avatar
+      }
+    });
 
     res.status(201).json({
       success: true,
-      data: createdChat[0],
+      data: conversationData,
       message: "Chat created successfully",
     });
   } catch (error) {
@@ -317,14 +358,32 @@ export const createGroupConversation = async (
 
     // Fetch the created conversation with populated data
     const createdChat = await Conversation.aggregate(
-      getConversationPipeline({
-        _id: conversation._id,
-      })
+      getConversationPipeline(
+        {
+          _id: conversation._id,
+        },
+        user._id.toString()
+      )
     );
+
+    const conversationData = createdChat[0];
+
+    participants.forEach((participantId: string) => {
+      if (participantId !== userId) {
+        io.to(`user_${participantId}`).emit("newConversation", {
+          conversation: conversationData,
+          initiatedBy: {
+            _id: user._id,
+            username: user.username,
+            avatar: user.avatar,
+          },
+        });
+      }
+    });
 
     res.status(201).json({
       success: true,
-      data: createdChat[0],
+      data: conversationData,
       message: "Group conversation created successfully",
     });
   } catch (error) {

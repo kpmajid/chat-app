@@ -57,6 +57,7 @@ export interface Conversation {
   participants: User[];
   group?: Group;
   lastMessage?: Message;
+  unreadCount: number;
   updatedAt: string;
   createdAt: string;
 }

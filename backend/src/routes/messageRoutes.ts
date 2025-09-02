@@ -4,6 +4,7 @@ import { protect } from "../middleware/authMiddleware";
 import {
   deleteMessage,
   getMessages,
+  markAsRead,
   sendMessage,
   updateMessage,
 } from "../controllers/messageController";
@@ -15,5 +16,7 @@ router.put("/:messageId", protect, updateMessage);
 router.delete("/:messageId", protect, deleteMessage);
 
 router.get("/:conversationId", protect, getMessages);
+
+router.post("/mark-read", protect, markAsRead);
 
 export default router;

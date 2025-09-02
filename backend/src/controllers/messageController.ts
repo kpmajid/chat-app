@@ -44,11 +44,37 @@ export const sendMessage = async (
       select: "username avatar online",
     });
 
-    const conversation = await Conversation.findByIdAndUpdate(
+    const conversation = await Conversation.findById(conversationId).populate(
+      "participants",
+      "_id username avatar online"
+    );
+
+    if (!conversation) {
+      res.status(404).json({
+        success: false,
+        message: "Conversation not found or access denied",
+      });
+      return;
+    }
+
+    const unreadUpdates: Record<string, number> = {};
+    conversation.participants.forEach((participant: any) => {
+      if (participant._id.toString() !== user._id.toString()) {
+        const currentUnread =
+          conversation.unreadCount.get(participant._id.toString()) || 0;
+        unreadUpdates[`unreadCount.${participant._id.toString()}`] =
+          currentUnread + 1;
+      }
+    });
+
+    const updatedConversation = await Conversation.findByIdAndUpdate(
       conversationId,
       {
-        lastMessage: message._id,
-        updatedAt: new Date(),
+        $set: {
+          ...unreadUpdates,
+          lastMessage: message._id,
+          updatedAt: new Date(),
+        },
       },
       { new: true }
     )
@@ -60,22 +86,20 @@ export const sendMessage = async (
         populate: { path: "sender", select: "username avatar online" },
       });
 
-    if (!conversation) {
-      res.status(404).json({
-        success: false,
-        message: "Conversation not found or access denied",
-      });
-      return;
-    }
-
     const participantIds = conversation.participants
       .filter((p) => p._id.toString() !== user._id.toString())
       .map((p: any) => p._id.toString());
 
     participantIds.forEach((participantId) => {
+      const unreadCount =
+        updatedConversation!.unreadCount.get(participantId) || 0;
+
       io.to(`user_${participantId}`).emit("newMessage", {
         message,
-        conversation,
+        conversation: {
+          ...updatedConversation!.toObject(),
+          unreadCount,
+        },
       });
     });
 
@@ -84,7 +108,10 @@ export const sendMessage = async (
       message: "Message sent successfully",
       data: {
         message,
-        conversation,
+        conversation: {
+          ...updatedConversation!.toObject(),
+          unreadCount:0,
+        },
       },
     });
   } catch (error) {
@@ -379,6 +406,60 @@ export const getMessages = async (
     res.status(500).json({
       success: false,
       message: "Failed to fetch messages",
+    });
+  }
+};
+
+export const markAsRead = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = req.user as IUser;
+    const { conversationId } = req.body;
+
+    if (!conversationId) {
+      res.status(400).json({
+        success: false,
+        message: "Conversation ID is required",
+      });
+      return;
+    }
+
+    const conversation = await Conversation.findOneAndUpdate(
+      {
+        _id: conversationId,
+        participants: user._id,
+      },
+      {
+        $set: {
+          [`unreadCount.${user._id.toString()}`]: 0,
+        },
+      },
+      { new: true }
+    );
+
+    if (!conversation) {
+      res.status(404).json({
+        success: false,
+        message: "Conversation not found or access denied",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Messages marked as read",
+      data: {
+        conversationId,
+        unreadCount: 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error marking messages as read:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to mark messages as read",
     });
   }
 };

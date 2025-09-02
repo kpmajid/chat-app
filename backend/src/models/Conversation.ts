@@ -9,6 +9,7 @@ export interface IConversation extends Document {
   participants: Types.ObjectId[] | IUser[];
   group?: Types.ObjectId;
   lastMessage?: Types.ObjectId;
+  unreadCount: Map<string, number>;
 }
 
 const conversationSchema = new Schema<IConversation>(
@@ -17,6 +18,7 @@ const conversationSchema = new Schema<IConversation>(
     participants: [{ type: Schema.Types.ObjectId, ref: "User" }],
     group: { type: Schema.Types.ObjectId, ref: "Group" },
     lastMessage: { type: Schema.Types.ObjectId, ref: "Message" },
+    unreadCount: { type: Map, of: Number, default: {} },
   },
   { timestamps: true }
 );

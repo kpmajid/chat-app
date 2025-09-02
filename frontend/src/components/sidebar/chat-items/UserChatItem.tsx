@@ -8,8 +8,9 @@ import { useSelector } from "react-redux";
 import { selectSelectedChat, setSelectedChat } from "@/features/chat/chatSlice";
 import { selectAuth } from "@/features/auth/authSlice";
 import { useAppDispatch } from "@/hooks/redux";
-import { fetchMessages } from "@/features/chat/chatThunks";
+import { fetchMessages, markMessagesAsRead } from "@/features/chat/chatThunks";
 import { AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface SidebarChatItemProps {
   conversation: Conversation;
@@ -30,6 +31,7 @@ const UserChatItem = ({ conversation }: SidebarChatItemProps) => {
   const conversationName = otherParticipant.username;
   const avatar = otherParticipant.avatar || "";
   const lastMessage = conversation.lastMessage;
+  const unreadCount = conversation.unreadCount;
 
   let lastMessageContent = "No messages yet";
   let isDeletedMessage = false;
@@ -61,6 +63,9 @@ const UserChatItem = ({ conversation }: SidebarChatItemProps) => {
     // Load messages for this conversation
     if (conversation._id) {
       dispatch(fetchMessages(conversation._id));
+      if (conversation.unreadCount > 0) {
+        dispatch(markMessagesAsRead(conversation._id));
+      }
     }
   };
 
@@ -89,9 +94,16 @@ const UserChatItem = ({ conversation }: SidebarChatItemProps) => {
           <div className="grid flex-1 text-left text-sm leading-tight">
             <div className="flex">
               <span className="truncate font-semibold">{conversationName}</span>
-              <span className="ml-auto text-xs text-muted-foreground">
-                {timestamp}
-              </span>
+              <div className="ml-auto flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Badge className="h-5 min-w-5 rounded-full px-1 font-mono tabular-nums ">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {timestamp}
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-1 overflow-hidden">
               {isDeletedMessage ? (

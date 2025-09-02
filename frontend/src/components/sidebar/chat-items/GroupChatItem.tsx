@@ -7,8 +7,9 @@ import { selectSelectedChat, setSelectedChat } from "@/features/chat/chatSlice";
 import { useSelector } from "react-redux";
 import { selectAuth } from "@/features/auth/authSlice";
 import { useAppDispatch } from "@/hooks/redux";
-import { fetchMessages } from "@/features/chat/chatThunks";
+import { fetchMessages, markMessagesAsRead } from "@/features/chat/chatThunks";
 import { AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface SidebarChatItemProps {
   conversation: Conversation;
@@ -19,11 +20,12 @@ const GroupChatItem = ({ conversation }: SidebarChatItemProps) => {
   const { user } = useSelector(selectAuth);
   const selectedChat = useSelector(selectSelectedChat);
 
-  if (!conversation.group) return null;
+  if (!conversation.group || !user) return null;
 
   const conversationName = conversation.group.name;
   const avatar = conversation.group.avatar || "";
   const lastMessage = conversation.lastMessage;
+  const unreadCount = conversation.unreadCount;
 
   let senderName;
   let messageContent = `You created group ${conversationName}`;
@@ -62,6 +64,9 @@ const GroupChatItem = ({ conversation }: SidebarChatItemProps) => {
     // Load messages for this conversation
     if (conversation._id) {
       dispatch(fetchMessages(conversation._id));
+      if (conversation.unreadCount > 0) {
+        dispatch(markMessagesAsRead(conversation._id));
+      }
     }
   };
 
@@ -88,11 +93,18 @@ const GroupChatItem = ({ conversation }: SidebarChatItemProps) => {
           <div className="grid flex-1 text-left text-sm leading-tight ">
             {/* <span className="truncate font-semibold">{conversationName}</span> */}
 
-            <div className="flex">
+            <div className="flex items-center">
               <span className="truncate font-semibold">{conversationName}</span>
-              <span className="ml-auto text-xs text-muted-foreground">
-                {timestamp}
-              </span>
+              <div className="ml-auto flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Badge className="h-5 min-w-5 rounded-full px-1 font-mono tabular-nums">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {timestamp}
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center gap-1 overflow-hidden">

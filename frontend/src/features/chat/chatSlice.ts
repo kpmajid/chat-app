@@ -6,6 +6,7 @@ import {
   createOrGetUserConversation,
   createGroupConversation,
   fetchMessages,
+  markMessagesAsRead,
 } from "./chatThunks";
 
 interface ChatState {
@@ -160,6 +161,18 @@ const chatSlice = createSlice({
         };
       }
     },
+
+    markAsRead: (state, action: PayloadAction<string>) => {
+      const conversationId = action.payload;
+
+      // Update conversation unread count
+      const conversation = state.conversations.find(
+        (conv) => conv._id === conversationId
+      );
+      if (conversation) {
+        conversation.unreadCount = 0;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -234,6 +247,16 @@ const chatSlice = createSlice({
       .addCase(fetchMessages.rejected, (state, action) => {
         state.messagesLoading = false;
         state.error = action.payload as string;
+      })
+
+      .addCase(markMessagesAsRead.fulfilled, (state, action) => {
+        const { conversationId } = action.payload;
+        const conversation = state.conversations.find(
+          (conv) => conv._id === conversationId
+        );
+        if (conversation) {
+          conversation.unreadCount = 0;
+        }
       });
   },
 });

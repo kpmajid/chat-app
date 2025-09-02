@@ -1,5 +1,5 @@
 //backend\src\routes
-import express, { Request, Response } from "express";
+import express from "express";
 import { protect } from "../middleware/authMiddleware";
 import { getMe, setUsername } from "../controllers/userController";
 

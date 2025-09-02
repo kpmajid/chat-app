@@ -9,7 +9,7 @@ import {
   setSelectedChat,
 } from "@/features/chat/chatSlice";
 
-import { fetchMessages } from "@/features/chat/chatThunks";
+import { fetchMessages, markMessagesAsRead } from "@/features/chat/chatThunks";
 
 import type { Conversation, User } from "@/lib/types";
 
@@ -123,6 +123,9 @@ export const useCreateChat = (isOpen: boolean) => {
       dispatch(setSelectedChat(conversation));
       if (conversation._id) {
         dispatch(fetchMessages(conversation._id));
+        if (conversation.unreadCount > 0) {
+          dispatch(markMessagesAsRead(conversation._id));
+        }
       }
     },
     [dispatch]

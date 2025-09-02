@@ -3,10 +3,10 @@ import ChatHeader from "./ChatHeader";
 import ChatMessages from "./ChatMessages";
 import ChatInput from "./ChatInput";
 import { useSelector } from "react-redux";
-import { useRealTimeMessages } from "@/hooks/useRealTimeMessages";
 import { selectMessages, selectSelectedChat } from "@/features/chat/chatSlice";
 import { selectAuth } from "@/features/auth/authSlice";
 import ChatDetailsPanel from "./ChatDetailsPanel";
+import { useMessageActions } from "@/hooks/useMessageActions";
 
 const ChatContent = () => {
   const { user } = useSelector(selectAuth);
@@ -16,7 +16,7 @@ const ChatContent = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const { sendMessage, deleteMessage, editMessage, isConnected } =
-    useRealTimeMessages();
+    useMessageActions();
 
   const handleSendMessage = useCallback(
     (message: string) => {
@@ -50,9 +50,9 @@ const ChatContent = () => {
   return (
     <div className="flex h-full relative overflow-hidden">
       <div className="flex flex-col h-full flex-1 transition-all duration-300 min-w-0">
-        <ChatHeader 
-          user={user!} 
-          selectedChat={selectedChat!} 
+        <ChatHeader
+          user={user!}
+          selectedChat={selectedChat!}
           onToggleDetails={() => setIsDetailsOpen(!isDetailsOpen)}
         />
         <ChatMessages
